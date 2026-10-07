@@ -1,0 +1,128 @@
+================================================================================
+HOW TO COMPILE VIDEO PLAYLIST CONTROL (VPC) FROM SOURCE
+================================================================================
+
+For Windows11 or macOS 15 and above
+
+--------------------------------------------------------------------------------
+1. PREREQUISITES
+--------------------------------------------------------------------------------
+
+A. Node.js & npm
+   - Download and install the LTS version of Node.js (v18 or v20 recommended).
+   - Verify installation: npm -v
+
+B. Rust
+   - Install Rust via rustup.
+   - Windows: Download from https://rustup.rs/ and install. Ensure MSVC C++ Build Tools are installed.
+   - macOS: If you use Brew run:`brew install rustup` // otherwise run: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+   - Verify installation: cargo --version
+
+C. Tauri 2 CLI
+   - Tauri 2 is included in the package.json devDependencies. 
+   - Running `npm install` at the root of the project will install the Tauri CLI.
+
+D. OS Specific Tools
+   - Windows 11: "Desktop development with C++" workload in Visual Studio Build Tools. WebView2 is usually pre-installed on Win11.
+   - macOS: Xcode Command Line Tools (`xcode-select --install`).
+
+--------------------------------------------------------------------------------
+2. EXTERNAL DEPENDENCIES (MPV & FFPROBE)
+--------------------------------------------------------------------------------
+
+VPC requires MPV and FFprobe to be placed inside a specific folder (`src-tauri/mpv/`).
+
+A. MPV (Video Viewer)
+https://mpv.io/installation/
+
+B. FFprobe (Metadata Reader)
+   - Windows: Download the "static" version of FFmpeg (contains ffprobe.exe, no DLLs required).
+     Link: https://www.gyan.dev/ffmpeg/builds/ (Get the "ffmpeg-release-full.7z" or BtbN GPL builds).
+   - macOS: Download the static build.
+     Link: https://evermeet.cx/ffmpeg/ (Download ffprobe-9.0.2.7z or above).
+
+--------------------------------------------------------------------------------
+3. FOLDER STRUCTURE SETUP
+--------------------------------------------------------------------------------
+
+Before compiling, your project folder must look exactly like this:
+
+VideoPlaylistControl/
+├── node_modules
+├── src/
+│   ├── assets/
+│   │   ├── arial.ttf
+│   │   ├── arialbd.ttf
+│   │   ├── ariblk.ttf
+│   │   ├── black.png
+│   │   ├── VPC-logo.icns
+│   │   ├── VPC-logo.ico
+│   │   └── VPC-logo.png
+│   ├── index.html
+│   ├── locales.js
+│   ├── log.html
+│   ├── main.js
+│   └── styles.css
+├── src-tauri/
+│   ├── capabilities
+│   ├── gen
+│   ├── mpv/
+│   │   ├── ffprobe.exe       # Windows (or just 'ffprobe' on macOS)
+│   │   └── mpv.exe           # Windows (or 'mpv.app' on macOS)
+│   ├── src/
+│   │   ├── black.png
+│   │   ├── lib.rs
+│   │   └── main.rs
+│   ├── build.rs
+│   ├── Cargo.lock
+│   ├── Cargo.toml
+│   └── tauri.conf.json
+└── package.json
+
+IMPORTANT NOTES FOR MACOS:
+- When placing `mpv.app` bundle in the `src-tauri/mpv/` folder, be sure remove the quarantine attribute:
+xattr -cr "src-tauri/mpv/"
+- Give execution rights to the binaries:
+chmod +x "src-tauri/mpv/ffprobe" "src-tauri/mpv/mpv.app"
+
+--------------------------------------------------------------------------------
+4. COMPILATION STEPS
+--------------------------------------------------------------------------------
+
+1. Open a terminal at the root of the project.
+2. Install npm dependencies:
+   npm install
+
+3. Run the app in Development mode (to test):
+   npm run tauri dev
+
+4. Build the final production executable:
+   npm run tauri build
+
+   - On Windows: The installer (.msi or .exe) will be generated in `src-tauri/target/release/bundle/`
+   - On macOS: The .dmg and .app will be generated in `src-tauri/target/release/bundle/`
+
+--------------------------------------------------------------------------------
+5. PRODUCTION DEPLOYMENT
+--------------------------------------------------------------------------------
+
+When distributing the final app, be sure that the `mpv` folder (containing mpv and ffprobe) and `black.png` are placed next to the final executable.
+
+On Windows the app folder must look exactly like this:
+VideoPlaylistControl/
+├── VideoPlaylistControl.exe
+│   ├── mpv/
+│   │   ├── ffprobe.exe
+│   │   └── mpv.exe
+└── black.png
+
+On macOS the `.app` bundle must look like this:
+VideoPlaylistControl.app/
+└── Contents/
+    ├── MacOS/
+    │   ├── ffprobe
+    │   ├── mpv.app
+    │   └── black.png
+    └── Resources/
+
+================================================================================

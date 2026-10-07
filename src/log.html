@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/styles.css" />
+    <title>VPC Logs</title>
+    <style>
+        body { 
+            background: #1a1a1a; 
+            color: #00ff00; 
+            font-family: monospace; 
+            font-size: 13px; 
+            padding: 10px; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden; 
+        }
+        .log-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 10px; 
+            color: #fff; 
+            font-family: 'VPC Arial', sans-serif; 
+        }
+        .log-header button { 
+            background: var(--vpc-element); 
+            color: #fff; 
+            border: none; 
+            border-radius: 4px; 
+            padding: 5px 15px; 
+            cursor: pointer; 
+        }
+        #log-content { 
+            flex: 1; 
+            overflow-y: auto; 
+            white-space: pre-wrap; 
+            word-wrap: break-word; 
+            background: #000; 
+            padding: 10px; 
+            border: 1px solid var(--vpc-element); 
+            border-radius: 4px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="log-header">
+        <span>Application Logs</span>
+        <button id="clear-btn">Clear</button>
+    </div>
+    <div id="log-content"></div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const logContent = document.getElementById('log-content');
+            const clearBtn = document.getElementById('clear-btn');
+            
+            // On utilise l'API globale de Tauri 2
+            const { invoke } = window.__TAURI__.core;
+            const { listen } = window.__TAURI__.event;
+
+            function addLog(message) {
+                const time = new Date().toLocaleTimeString();
+                logContent.innerText += `[${time}] ${message}\n`;
+                logContent.scrollTop = logContent.scrollHeight;
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    logContent.innerText = '';
+                });
+            }
+
+            try {
+                // 1. On récupère l'historique complet depuis Rust
+                const history = await invoke('get_all_logs');
+                if (Array.isArray(history)) {
+                    history.forEach(msg => addLog(msg));
+                }
+            } catch (e) {
+                addLog("Erreur de chargement de l'historique: " + e);
+            }
+
+            try {
+                // 2. On écoute les nouveaux logs en temps réel
+                await listen('new-log', (event) => {
+                    addLog(event.payload);
+                });
+            } catch (e) {
+                addLog("Erreur d'écoute des logs: " + e);
+            }
+        });
+    </script>
+</body>
+</html>
